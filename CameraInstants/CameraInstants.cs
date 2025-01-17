@@ -20,7 +20,7 @@ using LfsApi = LagFreeScreenshots.API.LfsApi;
 using PortableCamera = ABI_RC.Systems.Camera.PortableCamera;
 
 [assembly: MelonGame("Alpha Blend Interactive", "ChilloutVR")]
-[assembly: MelonInfo(typeof(CameraInstants.CameraInstantsMod), "CameraInstants", "2.0.2", "daky", "https://github.com/dakyneko/DakyModsCVR")]
+[assembly: MelonInfo(typeof(CameraInstants.CameraInstantsMod), "CameraInstants", "2.0.3", "daky", "https://github.com/dakyneko/DakyModsCVR")]
 [assembly:MelonAdditionalDependencies("LagFreeScreenshots")]
 [assembly:MelonOptionalDependencies("libwebpwrapper",
     // just to silent MelonLoader warnings, those are dependencies of AssetsTools, it works anyway
@@ -34,6 +34,7 @@ public class CameraInstantsMod : MelonMod
     private MelonPreferences_Entry<bool> myInstantsEnabled, captureAutoPropUpload, autoSpawnProp;
     private MelonPreferences_Entry<float> autoSpawnPropSize;
     private MelonPreferences_Entry<string> uploadUsername, uploadKey;
+    public static MelonPreferences_Entry<int> maxPixelSize;
     private Queue<string> autoSpawnPropsGids = new();
     private static bool isWebPInstalled = false;
 
@@ -48,6 +49,7 @@ public class CameraInstantsMod : MelonMod
         autoSpawnPropSize = category.CreateEntry("AutoSpawnPropSize", 0.6f, "Size of Instant props", "Maximum length (width or height) in game dimension");
         uploadUsername = category.CreateEntry("UploadUserName", "", "CCK Username", "Necessary for instants props");
         uploadKey = category.CreateEntry("UploadKey", "", "CCK Key", "Necessary for instants props");
+        maxPixelSize = category.CreateEntry("maxPixelSize", 2048, "maxPixelSize", "Max size your image will be resized to");
         // TODO: should listen to events on myInstantsEnabled change and add/rem listener instead
         LfsApi.OnScreenshotTexture += OnScreenshotTexture;
         LfsApi.OnScreenshotSavedV2 += OnScreenshotSaved;
@@ -256,13 +258,20 @@ public class CameraInstantsMod : MelonMod
         var templateBundle = Dakytils.StreamFromAssembly(ns, "cvrspawnable_00000000-0000-0000-0000-000000000000.cvrprop");
         if (templateBundle == null) throw new Exception($"Missing bundle template");
 
-        using var bitmap = imagePath.EndsWith(".webp") ?
+        var bitmap = imagePath.EndsWith(".webp") ?
             LoadWebP(imagePath) :
             new Bitmap(imagePath);
         // TODO: should resize the image so it uploads faster (CVR API is slow)
         logger.Msg($"Loaded template and image in {watch.ElapsedMilliseconds}"); watch.Restart();
         var thumbnail = InstantsPropBuilder.MakeThumbnail(bitmap, ImageFormat.Jpeg);
         logger.Msg($"Prepared thumbnail in {watch.ElapsedMilliseconds} msec"); watch.Restart();
+
+        if(CameraInstantsMod.maxPixelSize.Value > 0)
+        {
+            bitmap = InstantsPropBuilder.ResizeImage(bitmap, CameraInstantsMod.maxPixelSize.Value);
+            logger.Msg($"Resized image in {watch.ElapsedMilliseconds} msec"); watch.Restart();
+        }
+
         var bundle = InstantsPropBuilder.Build(templateBundle, bitmap, upload.gid, propSize: autoSpawnPropSize.Value);
         bitmap.Dispose();
 

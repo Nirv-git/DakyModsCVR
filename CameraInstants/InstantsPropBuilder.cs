@@ -209,4 +209,14 @@ public class InstantsPropBuilder
             new EncoderParameters { Param = new EncoderParameter[] { new(Encoder.Quality, quality) } });
         return tmpFile;
     }
+
+    public static Bitmap ResizeImage(Bitmap bitmap, int maxSize = 1024)
+    {
+        // resize thumb largest dimension respecting aspect ratio
+        var aspect = 1f * bitmap.Width / bitmap.Height;
+        var (thumbWidth, thumbHeight) = aspect > 1 ?
+            (maxSize, (int)Mathf.Floor(maxSize / aspect)) :
+            ((int)Mathf.Floor(maxSize * aspect), maxSize);
+        return new Bitmap(bitmap, thumbWidth, thumbHeight); // nice allocations
+    }
 }

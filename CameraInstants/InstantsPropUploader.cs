@@ -32,10 +32,9 @@ public class InstantsPropUploader
         if (req.StatusCode != HttpStatusCode.OK) throw new Exception($"Step 1 API error: {req}");
         var res = await req.Content.ReadAsStringAsync();
         var j = JsonConvert.DeserializeObject(res) as JObject;
-
-        var msg = j.GetValue("message")?.ToString();
+        var msg = j.GetValue("Message")?.ToString();
         if (msg != null) MelonLogger.Msg($"API step 1 says: {msg}");
-        var gid = (j["data"] as JObject)?.GetValue("id")?.ToString();
+        var gid = (j["Data"] as JObject)?.GetValue("Id")?.ToString();
         if (gid == null) throw new Exception($"API didn't provide a gid");
 
         return gid;
@@ -53,9 +52,9 @@ public class InstantsPropUploader
         MelonLogger.Msg($"UploadPropBundle GetAsync {watch.ElapsedMilliseconds} msec)"); watch.Restart();
         var res = await req.Content.ReadAsStringAsync();
         var j = JsonConvert.DeserializeObject(res) as JObject;
-        var msg = j.GetValue("message")?.ToString();
+        var msg = j.GetValue("Message")?.ToString();
         if (msg != null) MelonLogger.Msg($"API step 2 says: {msg}");
-        var location = (j["data"] as JObject)?.GetValue("uploadLocation")?.ToString();
+        var location = (j["Data"] as JObject)?.GetValue("UploadLocation")?.ToString();
         if (location == null) throw new Exception($"API didn't provide a location");
 
         // step 3: upload
